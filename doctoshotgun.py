@@ -599,6 +599,44 @@ class DoctolibFR(Doctolib):
 
     centers = URL(r'/vaccination-covid-19/(?P<where>\w+)', CentersPage)
     center = URL(r'/centre-de-sante/.*', CenterPage)
+    
+class Aggregate:
+  def __init__(self):
+    self._list = { }
+
+  def __iter__(self):
+    return Iterator(self._list)
+  
+  def get(self, index):
+    return self._list[index]
+
+  def set(self, l):
+    self._list = l
+    
+  def keys(self)
+        self._list.keys()
+  
+#
+# Iterator
+# implements methods for traversing over elements and 
+# is responsible for managing the current position of the iterator
+#
+class Iterator:
+  def __init__(self, aggregate):
+    self._list = aggregate
+    self._size = len(aggregate)
+    self._index = 0
+    
+  def __iter__(self):
+    return self
+  
+  def __next__(self):
+    if self._index < self._size:
+      pos = self._index
+      self._index += 1
+      return aggregate.get(pos)
+    else:
+      raise StopIteration()
 
 
 class Application:
@@ -620,10 +658,17 @@ class Application:
     def main(self, cli_args=None):
         colorama.init()  # needed for windows
 
-        doctolib_map = {
+        doctolib_map_aggregate = Aggregate()  
+        aggregate.set({
             "fr": DoctolibFR,
             "de": DoctolibDE
-        }
+        })
+  
+  for value in list(aggregate):
+    print("Item value: " + str(value))
+  
+  for value in list(aggregate):
+    print("Item value: " + str(value))
 
         parser = argparse.ArgumentParser(
             description="Book a vaccine slot on Doctolib")
@@ -662,7 +707,7 @@ class Application:
         parser.add_argument('--dry-run', action='store_true',
                             help='do not really book the slot')
         parser.add_argument(
-            'country', help='country where to book', choices=list(doctolib_map.keys()))
+            'country', help='country where to book', choices=list(doctolib_map_aggregate.keys()))
         parser.add_argument('city', help='city where to book')
         parser.add_argument('username', help='Doctolib username')
         parser.add_argument('password', nargs='?', help='Doctolib password')
@@ -681,7 +726,7 @@ class Application:
         if not args.password:
             args.password = getpass.getpass()
 
-        docto = doctolib_map[args.country](
+        docto = doctolib_map_aggregate[args.country](
             args.username, args.password, responses_dirname=responses_dirname)
         if not docto.do_login(args.code):
             return 1
@@ -864,3 +909,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('Abort.')
         sys.exit(1)
+
