@@ -599,7 +599,61 @@ class DoctolibFR(Doctolib):
 
     centers = URL(r'/vaccination-covid-19/(?P<where>\w+)', CentersPage)
     center = URL(r'/centre-de-sante/.*', CenterPage)
+    
+class Observerable(object):
+    country="de"
+    countrylist=[]
+    object=DoctolibDE(Doctolib)
+    def __init__(self):
+        self.observers = []
+    
+    def register(self, observer,country):
+        if not observer in self.observers:
+            self.observers.append(observer)
+            self.countrylist.append(country)
+    def unregister(self, observer,country):
+        if observer in self.observers:
+            self.observers.remove(observer)
+            self.countrylist.remove(country)
+    
+    def unregister_all(self):
+        if self.observers:
+            del self.observers[:]
+            self.countrylist=[]
+    def update_observers(self, *args, **kwargs):
+        i=0
+        for observer in self.observers:
+            if self.countrylist[i] != args.country:
+                pass
+            object=observer.update(*args, **kwargs)
+            i=i+1
+            break
+    def choices(self)
+        return list;
+        
 
+class Observer(object):
+    def update(self, *args, **kwargs):
+        pass
+
+# concrete observer subclasses
+class DoctolibFRObserver(Observer): 
+    def update(self, *args, **kwargs):
+        if args.debug:
+            self.setup_loggers(logging.DEBUG)
+        else:
+            responses_dirname = None
+        Observer.country=args.country;
+        Observer.object=DoctolibFR(args.username, args.password,responses_dirname=responses_dirname)
+
+class DoctolibDEObserver(Observer):
+    def update(self, *args, **kwargs):
+        if args.debug:
+            self.setup_loggers(logging.DEBUG)
+        else:
+            responses_dirname = None
+        Observer.country=args.country;
+        Observer.object=DoctolibDE(args.username, args.password,responses_dirname=responses_dirname)
 
 class Application:
     @classmethod
@@ -620,11 +674,12 @@ class Application:
     def main(self, cli_args=None):
         colorama.init()  # needed for windows
 
-        doctolib_map = {
-            "fr": DoctolibFR,
-            "de": DoctolibDE
-        }
-
+        doctolibObservable=Observerable()
+        de_observer = DoctolibDEObserver()
+        fr_observer = DoctolibFRObserver()
+        doctolibObservable.register(de_observer,"de")
+        doctolibObservable.register(fr_observer,"fr")
+        doctolibObservable.update_observers(country=args.country,username=args.username,pasword=args.password)
         parser = argparse.ArgumentParser(
             description="Book a vaccine slot on Doctolib")
         parser.add_argument('--debug', '-d', action='store_true',
@@ -662,7 +717,7 @@ class Application:
         parser.add_argument('--dry-run', action='store_true',
                             help='do not really book the slot')
         parser.add_argument(
-            'country', help='country where to book', choices=list(doctolib_map.keys()))
+            'country', help='country where to book', choices=doctolibObservable.choices())
         parser.add_argument('city', help='city where to book')
         parser.add_argument('username', help='Doctolib username')
         parser.add_argument('password', nargs='?', help='Doctolib password')
@@ -681,8 +736,7 @@ class Application:
         if not args.password:
             args.password = getpass.getpass()
 
-        docto = doctolib_map[args.country](
-            args.username, args.password, responses_dirname=responses_dirname)
+        docto = doctolibObservable.object()
         if not docto.do_login(args.code):
             return 1
 
